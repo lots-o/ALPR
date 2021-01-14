@@ -7,6 +7,11 @@ import os
 import shutil
 import Augmentor
 from abc import * # Abstract base clss
+import cv2
+import random
+import plate_dataset.info as plate_info
+
+
 
 IMG_FORMAT={'.png','.jpg','.jpeg'}
 
@@ -143,11 +148,183 @@ class CustomAugmentation(AugmentationHelper):
         p.sample(self.n_samples)
 
 
+'''
+##############################################################Synthetic korean auto-license-plate generator ##############################################################
+'''
+
+
+
+
+class LicensePlateFactory():
+    '''
+    Creator
+    '''
+    @staticmethod
+    def create_license_plate(type):
+        try:
+            if type == 'TYPE1':
+                return LicensePlateType1()
+            elif type == 'TYPE2':
+                return LicensePlateType2()
+            elif type == 'TYPE3':
+                return LicensePlateType3()
+            elif type == 'TYPE4':
+                return LicensePlateType4()
+            elif type == 'TYPE5':
+                return LicensePlateType5()
+            elif type == 'TYPE6':
+                return LicensePlateType6()
+            raise AssertionError('License plate type not found')
+        except AssertionError as e:
+            print(e)
+
+
+class LicensePlateTemplate(metaclass=ABCMeta):
+    '''
+    Template method pattern
+    '''
+
+    def load_images(self,path):
+        images=[]
+        try:
+            for file_name in os.listdir(path):
+                parser=os.path.splitext(file_name)
+                format=parser[1]
+                if format.lower() in IMG_FORMAT:
+                    img_path=os.path.join(path,file_name)
+                    images.append(cv2.imread(img_path))
+        except Exception as e:
+            raise e
+
+
+        return images
+
+
+    @abstractmethod
+    def draw(self,n_samples):
+        pass
+
+class LicensePlateType1(LicensePlateTemplate):
+    '''
+    Non business small white plate 335-155 , single line
+    '''
+
+    def draw(self,n_samples):
+        plate_path='plate_dataset/type1/plate'
+        num_path='plate_dataset/type1/num'
+        char_path='plate_dataset/type1/char'
+
+        plate=self.load_images(plate_path)
+        assert len(plate) == 1 , ('The source directory of plate must contain only one image')
+        nums=self.load_images(num_path)
+        chars=self.load_images(char_path)
+
+        #Resizing
+        plate=cv2.resize(plate[0],(plate_info.NON_BUSINESS_S_WHITE_PLATE_WIDTH,plate_info.NON_BUSINESS_S_WHITE_PLATE_HEIGHT))
+
+        nums=[cv2.resize(num,(plate_info.NON_BUSINESS_S_WHITE_PLATE_NUM_WIDTH,plate_info.NON_BUSINESS_S_WHITE_PLATE_NUM_HEIGHT))\
+              for num in nums]
+
+        chars = [cv2.resize(char,(plate_info.NON_BUSINESS_S_WHITE_PLATE_CHAR_WIDTH,plate_info.NON_BUSINESS_S_WHITE_PLATE_CHAR_HEIGHT))\
+              for char in chars]
+
+        #Draw
+
+        for _ in range(n_samples):
+            y=plate_info.NON_BUSINESS_S_WHITE_PLATE_TOP_INTERVAL
+            x=plate_info.NON_BUSINESS_S_WHITE_PLATE_LEFT_INTERVAL
+            for i in range(plate_info.NON_BUSINESS_S_WHITE_PLATE_LENGTH):
+                rand_num=random.randint(0,len(nums)-1)
+                rand_char=random.randint(0,len(chars)-1)
+
+                if i==2: #char
+                    plate[y:y + plate_info.NON_BUSINESS_S_WHITE_PLATE_CHAR_HEIGHT, \
+                    x:x + plate_info.NON_BUSINESS_S_WHITE_PLATE_CHAR_WIDTH] = chars[rand_char]
+                    x += plate_info.NON_BUSINESS_S_WHITE_PLATE_CHAR_WIDTH
+                else:
+                    plate[y:y + plate_info.NON_BUSINESS_S_WHITE_PLATE_NUM_HEIGHT, \
+                    x:x + plate_info.NON_BUSINESS_S_WHITE_PLATE_NUM_WIDTH] = nums[rand_num]
+                    x+=plate_info.NON_BUSINESS_S_WHITE_PLATE_NUM_WIDTH
+                # cv2.imshow('test',plate)
+                # cv2.waitKey()
+                # cv2.destroyAllWindows()
+
+
+class LicensePlateType2(LicensePlateTemplate):
+    '''
+    Non business large 2-digit white plate 520-110 , single line -> Type2
+    '''
+
+
+    def draw(self):
+        pass
+
+class LicensePlateType3(LicensePlateTemplate):
+    '''
+    Non business large 3-digit old white plate 520-110 , single line -> Type3
+    '''
+
+
+
+    def draw(self):
+        pass
+
+class LicensePlateType4(LicensePlateTemplate):
+    '''
+    Non business 3-digit new white plate 520-110 , single line -> Type4
+    '''
+
+
+
+    def draw(self):
+        pass
+
+class LicensePlateType5(LicensePlateTemplate):
+    '''
+    Business small yellow plate 335-170 , multi lines -> Type5
+    '''
+
+
+
+
+    def draw(self):
+        pass
+class LicensePlateType6(LicensePlateTemplate):
+    '''
+    Business large yellow plate 520-110 , single lines -> Type6
+    '''
+
+    /*-
+
+
+
+    def draw(self):
+        pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # classify_img_to_dir('dataset','augmented_data')
 # for type in CustomAugmentation.types:
 #     augmentor = CustomAugmentation(n_samples=200, type=type)
 #     augmentor.run('augmented_data')
 
+
+
+type1=LicensePlateFactory.create_license_plate('TYPE1')
+type1.draw(1)
 
 
 
