@@ -294,10 +294,6 @@ class LicensePlateType6(LicensePlateTemplate):
     Business large yellow plate 520-110 , single lines -> Type6
     '''
 
-    /*-
-
-
-
     def draw(self):
         pass
 
@@ -321,10 +317,10 @@ class LicensePlateType6(LicensePlateTemplate):
 #     augmentor = CustomAugmentation(n_samples=200, type=type)
 #     augmentor.run('augmented_data')
 
-
-
-type1=LicensePlateFactory.create_license_plate('TYPE1')
-type1.draw(1)
+#
+#
+# type1=LicensePlateFactory.create_license_plate('TYPE1')
+# type1.draw(1)
 
 
 
