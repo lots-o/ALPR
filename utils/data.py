@@ -157,48 +157,59 @@ class CustomAugmentation(AugmentationHelper):
 
 class LicensePlateFactory():
     '''
-    Creator
+    License Plate Creator
     '''
+
     @staticmethod
-    def create_license_plate(type):
-        try:
-            if type == 'TYPE1':
-                return LicensePlateType1()
-            elif type == 'TYPE2':
-                return LicensePlateType2()
-            elif type == 'TYPE3':
-                return LicensePlateType3()
-            elif type == 'TYPE4':
-                return LicensePlateType4()
-            elif type == 'TYPE5':
-                return LicensePlateType5()
-            elif type == 'TYPE6':
-                return LicensePlateType6()
-            raise AssertionError('License plate type not found')
-        except AssertionError as e:
-            print(e)
+    def create_license_plate(type,plate_path,num_path,char_path,region_path=None,save_path=None,debug=False):
+
+        TYPE={'TYPE1','TYPE2','TYPE3','TYPE4','TYPE5','TYPE6'}
+        assert type in TYPE, f'Available type : {TYPE}' 
+
+        config=(plate_path,num_path,char_path,region_path,save_path,debug)
+        if type == 'TYPE1':
+            return LicensePlateType1(*config)
+        elif type == 'TYPE2':
+            return LicensePlateType2(*config)
+        elif type == 'TYPE3':
+            return LicensePlateType3(*config)
+        elif type == 'TYPE4':
+            return LicensePlateType4(*config)
+        elif type == 'TYPE5':
+            return LicensePlateType5(*config)
+        elif type == 'TYPE6':
+            return LicensePlateType6(*config)
 
 
 class LicensePlateTemplate(metaclass=ABCMeta):
     '''
-    Template method pattern
+    License Plate Template
     '''
+    def __init__(self,plate_path,num_path,char_path,region_path=None,save_path=None,debug=False):
+        self.plate_path=plate_path
+        self.num_path=num_path
+        self.char_path=char_path
+        self.region_path=region_path
+        self.save_path=save_path
+        self.debug=debug
 
     def load_images(self,path):
         images=[]
+        file_names=[]
         try:
             for file_name in os.listdir(path):
                 parser=os.path.splitext(file_name)
+                name=parser[0]
                 format=parser[1]
                 if format.lower() in IMG_FORMAT:
                     img_path=os.path.join(path,file_name)
                     images.append(cv2.imread(img_path))
+                    file_names.append(name)
         except Exception as e:
             raise e
 
 
-        return images
-
+        return images,file_names 
 
     @abstractmethod
     def draw(self,n_samples):
@@ -210,14 +221,12 @@ class LicensePlateType1(LicensePlateTemplate):
     '''
 
     def draw(self,n_samples):
-        plate_path='plate_dataset/type1/plate'
-        num_path='plate_dataset/type1/num'
-        char_path='plate_dataset/type1/char'
+        
 
-        plate=self.load_images(plate_path)
+        plate,_=self.load_images(self.plate_path)
         assert len(plate) == 1 , ('The source directory of plate must contain only one image')
-        nums=self.load_images(num_path)
-        chars=self.load_images(char_path)
+        nums,_=self.load_images(self.num_path)
+        chars,chars_name=self.load_images(self.char_path)
 
         #Resizing
         plate=cv2.resize(plate[0],(plate_info.NON_BUSINESS_S_WHITE_PLATE_WIDTH,plate_info.NON_BUSINESS_S_WHITE_PLATE_HEIGHT))
@@ -229,22 +238,33 @@ class LicensePlateType1(LicensePlateTemplate):
               for char in chars]
 
         #Draw
-
         for _ in range(n_samples):
+            file_name=''
             y=plate_info.NON_BUSINESS_S_WHITE_PLATE_TOP_INTERVAL
             x=plate_info.NON_BUSINESS_S_WHITE_PLATE_LEFT_INTERVAL
             for i in range(plate_info.NON_BUSINESS_S_WHITE_PLATE_LENGTH):
-                rand_num=random.randint(0,len(nums)-1)
-                rand_char=random.randint(0,len(chars)-1)
-
                 if i==2: #char
+                    rand_char=random.randint(0,len(chars)-1)
                     plate[y:y + plate_info.NON_BUSINESS_S_WHITE_PLATE_CHAR_HEIGHT, \
                     x:x + plate_info.NON_BUSINESS_S_WHITE_PLATE_CHAR_WIDTH] = chars[rand_char]
                     x += plate_info.NON_BUSINESS_S_WHITE_PLATE_CHAR_WIDTH
-                else:
+                    file_name+=chars_name[rand_char]
+                else:# num
+                    rand_num=random.randint(0,len(nums)-1)
                     plate[y:y + plate_info.NON_BUSINESS_S_WHITE_PLATE_NUM_HEIGHT, \
                     x:x + plate_info.NON_BUSINESS_S_WHITE_PLATE_NUM_WIDTH] = nums[rand_num]
                     x+=plate_info.NON_BUSINESS_S_WHITE_PLATE_NUM_WIDTH
+                    file_name+=str(rand_num)
+
+            if self.debug:
+                cv2.imshow(file_name,plate)
+                cv2.waitKey()
+                cv2.destroyAllWindows()
+            
+            if self.save_path:
+                cv2.imwrite(f'{file_name}.jpg',plate)
+                print(f'Saved "{file_name}" --> "{self.save_path}"')
+            
 
 
 class LicensePlateType2(LicensePlateTemplate):
@@ -254,14 +274,11 @@ class LicensePlateType2(LicensePlateTemplate):
 
 
     def draw(self,n_samples):
-        plate_path = 'plate_dataset/type2/plate'
-        num_path = 'plate_dataset/type2/num'
-        char_path = 'plate_dataset/type2/char'
 
-        plate = self.load_images(plate_path)
+        plate,_ = self.load_images(self.plate_path)
         assert len(plate) == 1, ('The source directory of plate must contain only one image')
-        nums = self.load_images(num_path)
-        chars = self.load_images(char_path)
+        nums,_= self.load_images(self.num_path)
+        chars,chars_name = self.load_images(self.char_path)
 
         # Resizing
         plate = cv2.resize(plate[0],
@@ -278,25 +295,34 @@ class LicensePlateType2(LicensePlateTemplate):
         # Draw
 
         for _ in range(n_samples):
+            file_name=''
             y = plate_info.NON_BUSINESS_L_2_DIGIT_WHITE_PLATE_TOP_INTERVAL
             x = plate_info.NON_BUSINESS_L_2_DIGIT_WHITE_PLATE_LEFT_INTERVAL
             for i in range(plate_info.NON_BUSINESS_L_2_DIGIT_WHITE_PLATE_LENGTH):
-                rand_num = random.randint(0, len(nums) - 1)
-                rand_char = random.randint(0, len(chars) - 1)
 
                 if i == 2:  # char
+                    rand_char = random.randint(0, len(chars) - 1)
                     plate[y:y + plate_info.NON_BUSINESS_L_2_DIGIT_WHITE_PLATE_CHAR_HEIGHT, \
                     x:x + plate_info.NON_BUSINESS_L_2_DIGIT_WHITE_PLATE_CHAR_WIDTH] = chars[rand_char]
                     x += plate_info.NON_BUSINESS_L_2_DIGIT_WHITE_PLATE_CHAR_WIDTH
-                else:
+                    file_name+=chars_name[rand_char]
+                    
+                else: # num
+                    rand_num = random.randint(0, len(nums) - 1)
                     plate[y:y + plate_info.NON_BUSINESS_L_2_DIGIT_WHITE_PLATE_NUM_HEIGHT, \
                     x:x + plate_info.NON_BUSINESS_L_2_DIGIT_WHITE_PLATE_NUM_WIDTH] = nums[rand_num]
                     x += plate_info.NON_BUSINESS_L_2_DIGIT_WHITE_PLATE_NUM_WIDTH
+                    file_name+=str(rand_num)
 
-
-                cv2.imshow('test',plate)
+            if self.debug:
+                cv2.imshow(file_name,plate)
                 cv2.waitKey()
                 cv2.destroyAllWindows()
+            
+            if self.save_path:
+                cv2.imwrite(f'{file_name}.jpg',plate)
+                print(f'Saved "{file_name}" --> "{self.save_path}"')
+                
 
 
 class LicensePlateType3(LicensePlateTemplate):
@@ -337,28 +363,25 @@ class LicensePlateType6(LicensePlateTemplate):
 
 
 
+if __name__== '__main__':
+    plate_type_1=LicensePlateFactory().create_license_plate(
+        type='TYPE1',
+        plate_path='utils/plate_dataset/type1/plate',
+        num_path='utils/plate_dataset/type1/num',
+        char_path='utils/plate_dataset/type1/char',
+        save_path='./'
 
+    )
+    plate_type_2=LicensePlateFactory().create_license_plate(
+        type='TYPE2',
+        plate_path='utils/plate_dataset/type2/plate',
+        num_path='utils/plate_dataset/type2/num',
+        char_path='utils/plate_dataset/type2/char',
+        save_path='./'
 
-
-
-
-
-
-
-
-
-
-
-
-# classify_img_to_dir('dataset','augmented_data')
-# for type in CustomAugmentation.types:
-#     augmentor = CustomAugmentation(n_samples=200, type=type)
-#     augmentor.run('augmented_data')
-
-#
-#
-type2=LicensePlateFactory.create_license_plate('TYPE2')
-type2.draw(1)
+    )
+    # plate_type_1.draw(10)
+    plate_type_2.draw(10)
 
 
 

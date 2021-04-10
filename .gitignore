@@ -132,6 +132,9 @@ dmypy.json
 utils/dataset
 utils/augmented_data
 
+#vscode
+.vscode/
+
 #
 .idea/
 
